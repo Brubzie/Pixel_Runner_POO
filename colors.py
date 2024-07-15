@@ -8,3 +8,4 @@ GREEN = (0,255,0)
 text_color = (64, 64, 64)
 box_color = '#c0e8ec'
 game_over_bg = (94, 129, 162)
+points_text_color = (111, 196, 169)
