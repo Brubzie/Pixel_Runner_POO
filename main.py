@@ -3,7 +3,6 @@ import pygame
 import sys
 import os
 import tkinter as tk
-
 from tkinter import messagebox
 from random import randint, choice
 from pygame.locals import VIDEORESIZE
@@ -16,6 +15,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Função para criar o caminho do arquivo relativo ao diretório base
 def get_path(relative_path):
     return os.path.join(BASE_DIR, relative_path)
+
+# Inicialização do Pygame
+pygame.init()
+
+# Definindo altura e largura da tela
+width, height = 800, 400
+screen = pygame.display.set_mode((width, height)) # Inicializa o modo de vídeo
 
 # Adiciona o diretório atual ao path do sistema
 dirpath = os.getcwd()
@@ -32,21 +38,40 @@ def show_error_message(error_message):
     messagebox.showerror('Erro', error_message)
     root.destroy()
 
+# Carrega recursos uma vez
+def load_resources():
+    resources = {
+        'player_walk_1' : pygame.image.load(get_path('data/graphics/Player/player_walk_1.png')).convert_alpha(),
+        'player_walk_2' : pygame.image.load(get_path('data/graphics/Player/player_walk_2.png')).convert_alpha(),
+        'player_jump' : pygame.image.load(get_path('data/graphics/Player/jump.png')).convert_alpha(),
+        'player_stand' : pygame.image.load(get_path('data/graphics/Player/player_stand.png')).convert_alpha(),
+        'fly_1' : pygame.image.load(get_path('data/graphics/Fly/Fly1.png')).convert_alpha(),
+        'fly_2' : pygame.image.load(get_path('data/graphics/Fly/Fly2.png')).convert_alpha(),
+        'snail_1' : pygame.image.load(get_path('data/graphics/snail/snail1.png')).convert_alpha(),
+        'snail_2' : pygame.image.load(get_path('data/graphics/snail/snail2.png')).convert_alpha(),
+        'sky' : pygame.image.load(get_path('data/graphics/Sky.png')).convert_alpha(),
+        'ground' : pygame.image.load(get_path('data/graphics/ground.png')).convert_alpha(),
+        'font' : pygame.font.Font(get_path('data/font/Pixeltype.ttf'), 50),
+        'jump_sound' : pygame.mixer.Sound(get_path('data/audio/jump.mp3')),
+        'bg_music' : pygame.mixer.Sound(get_path('data/audio/music.wav')),
+    }
+    resources['jump_sound'].set_volume(0.5)
+    resources['bg_music'].set_volume(0.5)
+    return resources
+
+RESOURCES = load_resources()
+
+# Classe Player
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        player_walk_1 = pygame.image.load(get_path('data/graphics/Player/player_walk_1.png')).convert_alpha()
-        player_walk_2 = pygame.image.load(get_path('data/graphics/Player/player_walk_2.png')).convert_alpha()
-        self.player_walk = [player_walk_1, player_walk_2]
+        self.player_walk = [RESOURCES['player_walk_1'], RESOURCES['player_walk_2']]
         self.player_index = 0
-        self.player_jump = pygame.image.load(get_path('data/graphics/Player/jump.png')).convert_alpha()
-        
+        self.player_jump = RESOURCES['player_jump']
         self.image = self.player_walk[self.player_index]
         self.rect = self.image.get_rect(midbottom=(80, 300))
         self.gravity = 0
-        
-        self.jump_sound = pygame.mixer.Sound('data/audio/jump.mp3')
-        self.jump_sound.set_volume(0.5)
+        self.jump_sound = RESOURCES['jump_sound']
         
     def player_input(self):
         keys = pygame.key.get_pressed()
@@ -66,10 +91,8 @@ class Player(pygame.sprite.Sprite):
             self.image = self.player_jump
         else:
             self.player_index += 0.1
-            
             if self.player_index >= len(self.player_walk):
                 self.player_index = 0
-
             self.image = self.player_walk[int(self.player_index)]
             
     def update(self):
@@ -77,19 +100,16 @@ class Player(pygame.sprite.Sprite):
         self.apply_gravity()
         self.animation_state()
 
+# Classe Obstacle
 class Obstacle(pygame.sprite.Sprite):
     def __init__(self, type):
         super().__init__()
         
         if type == 'fly':
-            fly_1 = pygame.image.load(get_path('data/graphics/Fly/Fly1.png')).convert_alpha()
-            fly_2 = pygame.image.load(get_path('data/graphics/Fly/Fly2.png')).convert_alpha()
-            self.frames = [fly_1, fly_2]
+            self.frames = [RESOURCES['fly_1'], RESOURCES['fly_2']]
             y_pos = 210
         else:
-            snail_1 = pygame.image.load(get_path('data/graphics/snail/snail1.png')).convert_alpha()
-            snail_2 = pygame.image.load(get_path('data/graphics/snail/snail2.png')).convert_alpha()
-            self.frames = [snail_1, snail_2]
+            self.frames = [RESOURCES['snail_1'], RESOURCES['snail_2']]
             y_pos = 300
         
         self.animation_index = 0
@@ -98,10 +118,8 @@ class Obstacle(pygame.sprite.Sprite):
         
     def animation_state(self):
         self.animation_index += 0.1
-        
         if self.animation_index >= len(self.frames):
             self.animation_index = 0
-            
         self.image = self.frames[int(self.animation_index)]
         
     def update(self):
@@ -113,25 +131,23 @@ class Obstacle(pygame.sprite.Sprite):
         if self.rect.x <= -100:
             self.kill()
 
+# Classe Game (principal)
 class Game:
-
     def __init__(self):
         """Inicializando a classe Game."""
-        
-        # Inicialização do Pygame
-        pygame.init()
+        super().__init__()
         
         self.fps = 60 # Quadros por segundo
         self.clock = pygame.time.Clock()
         
-        self.test_font = pygame.font.Font(get_path('data/font/Pixeltype.ttf'), 50)
+        self.test_font = RESOURCES['font']
 
         # Definindo altura e largura da tela
-        self.width = 800
-        self.height = 400
+        self.width = width
+        self.height = height
 
         # Definindo argumentos da janela
-        self.screen = pygame.display.set_mode((self.width, self.height))
+        self.screen = screen
 
         # Título da janela do jogo
         pygame.display.set_caption('Pixel Runner')
@@ -139,8 +155,7 @@ class Game:
         self.game_active = True
         self.start_time = 0
         self.score = 0
-        self.bg_music = pygame.mixer.Sound('data/audio/music.wav')
-        self.bg_music.set_volume(0.5)
+        self.bg_music = RESOURCES['bg_music']
         self.bg_music.play(loops = -1)
         
         # Groups | Grupos
@@ -151,133 +166,47 @@ class Game:
         
         """ Carregando Sprites """
         # Background | Plano de Fundo
-        self.sky_surface = pygame.image.load(get_path('data/graphics/Sky.png')).convert_alpha()
-        self.ground_surface = pygame.image.load(get_path('data/graphics/ground.png')).convert_alpha()
-
-        # Snail | Lesma
-        self.snail_frame_1 = pygame.image.load(get_path('data/graphics/snail/snail1.png')).convert_alpha()
-        self.snail_frame_2 = pygame.image.load(get_path('data/graphics/snail/snail2.png')).convert_alpha()
-        self.snail_frames = [self.snail_frame_1, self.snail_frame_2]
-        self.snail_frame_index = 0
-        self.snail_surf = self.snail_frames[self.snail_frame_index]
+        self.sky_surface = RESOURCES['sky']
+        self.ground_surface = RESOURCES['ground']
 
         # Player | Jogador
-        self.player_walk_1 = pygame.image.load(get_path('data/graphics/Player/player_walk_1.png')).convert_alpha()
-        self.player_walk_2 = pygame.image.load(get_path('data/graphics/Player/player_walk_2.png')).convert_alpha()
-        self.player_walk = [self.player_walk_1, self.player_walk_2]
-        self.player_index = 0
-        self.player_jump = pygame.image.load(get_path('data/graphics/Player/jump.png')).convert_alpha()
-        self.player_stand = pygame.image.load(get_path('data/graphics/Player/player_stand.png')).convert_alpha()
-        self.player_surf = self.player_walk[self.player_index]
+        self.player_stand = RESOURCES['player_stand']
 
-        # Mosca | Fly
-        self.fly_frame_1 = pygame.image.load(get_path('data/graphics/Fly/Fly1.png')).convert_alpha()
-        self.fly_frame_2 = pygame.image.load(get_path('data/graphics/Fly/Fly2.png')).convert_alpha()
-        self.fly_frames = [self.fly_frame_1, self.fly_frame_2]
+        # Inicializa os índices de animação dos obstáculos
+        self.snail_frame_index = 0
         self.fly_frame_index = 0
-        self.fly_surf = self.fly_frames[self.fly_frame_index]
-        
-        # Gravity / Gravidade
-        self.player_gravity = 0
 
     def display_score(self):
         """Exibe a pontuação e a atualiza."""
         
-        # Inicialização das variáveis
-        screen = self.screen
-        start_time = self.start_time
-        test_font = self.test_font
-        
-        current_time = int(pygame.time.get_ticks() / 1000) - start_time
-        score_surf = test_font.render(f'Pontos: {current_time}', False, text_color)
+        current_time = int(pygame.time.get_ticks() / 1000) - self.start_time
+        score_surf = self.test_font.render(f'Pontos: {current_time}', False, text_color)
         score_rect = score_surf.get_rect(center=(400, 50))
-        screen.blit(score_surf, score_rect)
+        self.screen.blit(score_surf, score_rect)
         return current_time
-
-    def obstacle_movement(self, obstacle_list):
-        # Inicialização das variáveis
-        screen = self.screen
-        snail_surf = self.snail_surf
-        fly_surf = self.fly_surf
-        
-        if obstacle_list:
-            for obstacle_rect in obstacle_list:
-                obstacle_rect.x -= 5
-                
-                if obstacle_rect.bottom == 300: screen.blit(snail_surf, obstacle_rect)
-                else: screen.blit(fly_surf, obstacle_rect)
-                
-            obstacle_list = [obstacle for obstacle in obstacle_list if obstacle.x > -100]
-                
-            return obstacle_list
-        
-        else: return []
-    
-    def collisions(self, player, obstacles):
-        if obstacles:
-            for obstacle_rect in obstacles:
-                if player.colliderect(obstacle_rect): return False
-        return True
     
     def collision_sprite(self):
-        # Inicializando as variáveis
-        player = self.player
-        obstacle_group = self.obstacle_group
-        
-        if pygame.sprite.spritecollide(player.sprite, obstacle_group, False):
-            obstacle_group.empty()
+        if pygame.sprite.spritecollide(self.player.sprite, self.obstacle_group, False):
+            self.obstacle_group.empty()
             return False
         else:
             return True
     
-    def player_animation(self):
-        """
-            Reproduz a animação de caminhada se o jogador estiver no chão.
-            Exibe a superfície do salto quando o jogador não estiver no chão.
-        """
-
-        player_jump = self.player_jump
-        player_walk = self.player_walk
-
-        global player_surf, player_index
-        
-        if self.player_rect.bottom < 300:
-            # Jump | Pulo
-            self.player_surf = player_jump
-        else:
-            # Walk | Andar
-            self.player_index += 0.1
-            
-            if self.player_index >= len(player_walk):
-                self.player_index = 0
-            
-            self.player_surf = player_walk[int(self.player_index)]
-    
-    def startGame(self):
+    def start_game(self):
         """ Função onde o jogo será iniciado. """
-        
-        # Causa um erro proposital para teste
-        # self.non_existent_variable # Isso causará um AttributeError
         
         # Inicialização das variáveis
         sky_surface = self.sky_surface
         ground_surface = self.ground_surface
-        player_walk_1 = self.player_walk_1
         player_stand = self.player_stand
         test_font = self.test_font
         screen = self.screen
         game_active = self.game_active
         fps = self.fps
         clock = self.clock
-        snail_frames = self.snail_frames
-        fly_frames = self.fly_frames
-        player = self.player
-        self.player_rect = self.player_walk_1.get_rect(midbottom=(80, 300))
         
         # Obstáculos
         obstacle_rect_list = []
-        
-        player_rect = player_walk_1.get_rect(midbottom = (80, 300))
         
         # Intro screen | Tela de introdução
         player_stand = pygame.transform.rotozoom(player_stand, 0, 2)
@@ -314,12 +243,12 @@ class Game:
 
                 if game_active:
                     if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_SPACE and player_rect.bottom >= 300:
-                            player_gravity = -20
+                        if event.key == pygame.K_SPACE and self.player.sprite.rect.bottom >= 300:
+                            self.player.sprite.gravity = -20
 
                     if event.type == pygame.MOUSEBUTTONDOWN:
-                        if player_rect.collidepoint(event.pos) and player_rect.bottom >= 300:
-                            player_gravity = -20
+                        if self.player.sprite.rect.collidepoint(event.pos) and self.player.sprite.rect.bottom >= 300:
+                            self.player.sprite.gravity = -20
                 
                 else:
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
@@ -329,11 +258,6 @@ class Game:
                 if game_active:
                     if event.type == obstacle_timer:
                         self.obstacle_group.add(Obstacle(choice(['fly', 'snail', 'snail', 'snail'])))
-                        
-                        # if randint(0, 2):
-                        #     obstacle_rect_list.append(snail_surf.get_rect(bottomright = (randint(900, 1100), 300)))
-                        # else:
-                        #     obstacle_rect_list.append(fly_surf.get_rect(bottomright = (randint(900, 1100), 210)))
                     
                     if event.type == snail_animation_timer:
                         if self.snail_frame_index == 0:
@@ -341,7 +265,7 @@ class Game:
                         else:
                             self.snail_frame_index = 0
                         
-                        self.snail_surf = snail_frames[self.snail_frame_index]
+                        self.snail_surf = RESOURCES['snail_1'] if self.snail_frame_index == 0 else RESOURCES['snail_2']
 
                     if event.type == fly_animation_timer:
                         if self.fly_frame_index == 0:
@@ -349,61 +273,48 @@ class Game:
                         else:
                             self.fly_frame_index = 0
                         
-                        self.fly_surf = fly_frames[self.fly_frame_index]
+                        self.fly_surf = RESOURCES['fly_1'] if self.fly_frame_index == 0 else RESOURCES['fly_2']
              
                 
             if game_active:
                 # Plano de fundo da tela | Background
                 screen.blit(sky_surface, (0, 0))
                 screen.blit(ground_surface, (0, 300))
-                score = self.display_score()
+                self.score = self.display_score()
 
                 # Player | Jogador
-                # player_gravity += 1
-                # player_rect.y += player_gravity
-                
-                # if player_rect.bottom >= 300:
-                #     player_rect.bottom = 300
-
-                # self.player_animation()
-                # screen.blit(self.player_surf, player_rect)
-                player.draw(screen)
-                player.update()
+                self.player.draw(screen)
+                self.player.update()
                 
                 self.obstacle_group.draw(screen)
                 self.obstacle_group.update()
                 
-                # Movimentação dos obstáculos/inimigos | Obstacle movement
-                # obstacle_rect_list = self.obstacle_movement(obstacle_rect_list)
-                
                 # Colisão
                 game_active = self.collision_sprite()
-                # game_active = self.collisions(player_rect, obstacle_rect_list)
                 
             else:
                 screen.fill(game_over_bg)
                 screen.blit(player_stand, player_stand_rect)
                 obstacle_rect_list.clear()
-                player_rect.midbottom = (80, 300)
-                player_gravity = 0
+                self.player.sprite.rect.midbottom = (80, 300)
+                self.player.sprite.gravity = 0
                 
-                score_message = test_font.render(f'Seus pontos: {score}', False, points_text_color)
+                score_message = test_font.render(f'Seus pontos: {self.score}', False, points_text_color)
                 score_message_rect = score_message.get_rect(center = (400, 330))
                 screen.blit(game_name, game_name_rect)
                 
-                if score == 0:
+                if self.score == 0:
                     screen.blit(game_message, game_message_rect)
                 else:
                     screen.blit(score_message, score_message_rect)
             
             pygame.display.flip()
-            game_fps = clock.tick(fps)
-            game_fps
+            clock.tick(fps)
 
 if __name__ == '__main__':
     try:
         game = Game()
-        game.startGame()
+        game.start_game()
     except Exception as error:
         tradutor = GoogleTranslator(source = 'en', target = 'pt')
         traducao = tradutor.translate(str(error))
