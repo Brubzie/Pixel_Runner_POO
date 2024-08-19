@@ -102,7 +102,7 @@ class Player(pygame.sprite.Sprite):
 
 # Classe Obstacle
 class Obstacle(pygame.sprite.Sprite):
-    def __init__(self, type):
+    def __init__(self, type, player):
         super().__init__()
         
         if type == 'fly':
@@ -115,6 +115,7 @@ class Obstacle(pygame.sprite.Sprite):
         self.animation_index = 0
         self.image = self.frames[self.animation_index]
         self.rect = self.image.get_rect(midbottom = (randint(900, 1100), y_pos))
+        self.player = player # Referência ao jogador
         
     def animation_state(self):
         self.animation_index += 0.1
@@ -129,6 +130,10 @@ class Obstacle(pygame.sprite.Sprite):
         
     def destroy(self):
         if self.rect.x <= -100:
+            # Se o obstáculo saiu da tela sem colidir com o jogador, aumenta a pontuação
+            if not pygame.sprite.collide_rect(self, self.player):
+                self.player.game.score += 1
+                
             self.kill()
 
 # Classe Game (principal)
@@ -160,7 +165,9 @@ class Game:
         
         # Groups | Grupos
         self.player = pygame.sprite.GroupSingle()
-        self.player.add(Player())
+        player_instance = Player()
+        player_instance.game = self # Adiciona referência ao jogo na instância do jogador
+        self.player.add(player_instance)
 
         self.obstacle_group = pygame.sprite.Group()
         
@@ -179,15 +186,14 @@ class Game:
     def display_score(self):
         """Exibe a pontuação e a atualiza."""
         
-        current_time = int(pygame.time.get_ticks() / 1000) - self.start_time
-        score_surf = self.test_font.render(f'Pontos: {current_time}', False, text_color)
-        score_rect = score_surf.get_rect(center=(400, 50))
+        score_surf = self.test_font.render(f'Pontos: {self.score}', False, text_color)
+        score_rect = score_surf.get_rect(center = (400, 50))
         self.screen.blit(score_surf, score_rect)
-        return current_time
     
     def collision_sprite(self):
         if pygame.sprite.spritecollide(self.player.sprite, self.obstacle_group, False):
-            self.obstacle_group.empty()
+            self.obstacle_group.empty()  # Limpa os obstáculos após a colisão
+            self.score = 0  # Reseta a pontuação ao colidir
             return False
         else:
             return True
@@ -257,7 +263,7 @@ class Game:
 
                 if game_active:
                     if event.type == obstacle_timer:
-                        self.obstacle_group.add(Obstacle(choice(['fly', 'snail', 'snail', 'snail'])))
+                        self.obstacle_group.add(Obstacle(choice(['fly', 'snail', 'snail', 'snail']), self.player.sprite))
                     
                     if event.type == snail_animation_timer:
                         if self.snail_frame_index == 0:
@@ -280,7 +286,7 @@ class Game:
                 # Plano de fundo da tela | Background
                 screen.blit(sky_surface, (0, 0))
                 screen.blit(ground_surface, (0, 300))
-                self.score = self.display_score()
+                self.display_score()
 
                 # Player | Jogador
                 self.player.draw(screen)
