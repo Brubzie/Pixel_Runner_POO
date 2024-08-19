@@ -64,6 +64,7 @@ RESOURCES = load_resources()
 # Classe Player
 class Player(pygame.sprite.Sprite):
     def __init__(self):
+        """Inicialização da classe Player."""
         super().__init__()
         self.player_walk = [RESOURCES['player_walk_1'], RESOURCES['player_walk_2']]
         self.player_index = 0
@@ -103,6 +104,7 @@ class Player(pygame.sprite.Sprite):
 # Classe Obstacle
 class Obstacle(pygame.sprite.Sprite):
     def __init__(self, type, player):
+        """Inicialização da classe Obstacle."""
         super().__init__()
         
         if type == 'fly':
@@ -189,6 +191,14 @@ class Game:
         score_surf = self.test_font.render(f'Pontos: {self.score}', False, text_color)
         score_rect = score_surf.get_rect(center = (400, 50))
         self.screen.blit(score_surf, score_rect)
+
+    def display_time(self):
+        """Exibe o tempo em segundos."""
+
+        current_time = time.strftime("%S")  # Obtém apenas os segundos do tempo atual
+        time_surf = self.test_font.render(f'Tempo: {current_time}s', False, text_color)
+        time_rect = time_surf.get_rect(center = (100, 50))
+        self.screen.blit(time_surf, time_rect)
     
     def collision_sprite(self):
         if pygame.sprite.spritecollide(self.player.sprite, self.obstacle_group, False):
